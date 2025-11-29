@@ -34,18 +34,6 @@ interface ApiError {
 }
 
 class ApiService {
-  private getCsrfToken(): string | null {
-    if (typeof document === 'undefined') return null;
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'csrftoken') {
-        return value;
-      }
-    }
-    return null;
-  }
-
   private getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
     // Read token from localStorage instead of cookies
@@ -73,22 +61,16 @@ class ApiService {
       ...options.headers,
     };
 
-    // Add JWT token from cookie to Authorization header
+    // Add JWT token from localStorage to Authorization header
     const authToken = this.getAuthToken();
     if (authToken) {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
 
-    // Add CSRF token for state-changing methods
-    const csrfToken = this.getCsrfToken();
-    if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method || 'GET')) {
-      headers['X-CSRFToken'] = csrfToken;
-    }
-
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
-      credentials: 'include',  // Also send cookies
+      credentials: 'omit',  // Don't send cookies - using localStorage instead
     });
 
     if (!response.ok) {
@@ -138,11 +120,18 @@ class ApiService {
   }
 
   async logout(): Promise<void> {
-    await this.request('/api/auth/logout/', {
-      method: 'POST',
-    });
-    // Clear tokens from localStorage
-    this.clearTokens();
+    try {
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (refreshToken) {
+        await this.request('/api/auth/logout/', {
+          method: 'POST',
+          body: JSON.stringify({ refresh: refreshToken }),
+        });
+      }
+    } finally {
+      // Always clear tokens from localStorage, even if logout request fails
+      this.clearTokens();
+    }
   }
 
   async getUser(): Promise<AuthResponse['user']> {

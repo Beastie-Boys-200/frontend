@@ -17,8 +17,13 @@ export const Navbar = ({ isProfileModalOpen, setIsProfileModalOpen }: NavbarProp
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
-    await logout();
-    window.location.href = '/';
+    try {
+      await logout();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Logout failed:', error);
+      alert('Logout failed. Please try again.');
+    }
   };
 
   const navItems = [

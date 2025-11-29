@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // Always try to get user - if httpOnly cookie exists, backend will return user data
+        // Try to get user - if token exists in localStorage, backend will return user data
         const userData = await api.getUser();
         setUser(mapUser(userData));
       } catch {
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Backend clears httpOnly cookies automatically
+      // api.logout() already cleared tokens from localStorage
       setUser(null);
     }
   };
@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      // No need to check for token - httpOnly cookies are sent automatically
+      // Token from localStorage is automatically added to Authorization header
       const userData = await api.getUser();
       setUser(mapUser(userData));
     } catch (error) {
