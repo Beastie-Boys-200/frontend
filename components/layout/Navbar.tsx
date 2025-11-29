@@ -4,13 +4,16 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
-import { ProfileModal } from '@/components/modals/ProfileModal';
 
-export const Navbar = () => {
+interface NavbarProps {
+  isProfileModalOpen?: boolean;
+  setIsProfileModalOpen?: (isOpen: boolean) => void;
+}
+
+export const Navbar = ({ isProfileModalOpen, setIsProfileModalOpen }: NavbarProps = {}) => {
   const { user, isAuthenticated, logout } = useAuth();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
@@ -357,9 +360,6 @@ export const Navbar = () => {
           </div>
         </div>
       </div>
-
-      {/* Profile Modal */}
-      <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
     </nav>
   );
 };
