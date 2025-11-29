@@ -6,6 +6,18 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+function getCsrfToken(): string | null {
+  if (typeof document === 'undefined') return null;
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'csrftoken') {
+      return value;
+    }
+  }
+  return null;
+}
+
 export default function GoogleCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,11 +46,18 @@ export default function GoogleCallbackPage() {
       }
 
       try {
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        };
+
+        const csrfToken = getCsrfToken();
+        if (csrfToken) {
+          headers['X-CSRFToken'] = csrfToken;
+        }
+
         const response = await fetch(`${API_URL}/api/auth/google/`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           credentials: 'include',
           body: JSON.stringify({ code }),
         });
