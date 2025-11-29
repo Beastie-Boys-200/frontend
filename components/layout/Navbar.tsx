@@ -32,33 +32,9 @@ export const Navbar = ({ isProfileModalOpen, setIsProfileModalOpen }: NavbarProp
       ],
     },
     {
-      name: 'Chatbot',
-      href: '#',
-      dropdown: [
-        { name: 'AI Assistant', href: '/ai-assistant' },
-        { name: 'Use Cases', href: '/use-cases' },
-        { name: 'Integrations', href: '/integrations' },
-      ],
+      name: 'Chat',
+      href: '/chat',
     },
-    {
-      name: 'Solutions',
-      href: '#',
-      dropdown: [
-        { name: 'For Business', href: '/solutions/business' },
-        { name: 'For Enterprise', href: '/solutions/enterprise' },
-        { name: 'For Developers', href: '/solutions/developers' },
-      ],
-    },
-    {
-      name: 'Pricing',
-      href: '/pricing',
-    },
-  ];
-
-  const rightItems = [
-    { name: 'Support', href: '/support' },
-    { name: 'Get Started', href: '/register', highlight: true },
-    { name: 'Sign In', href: '/login', outline: true },
   ];
 
   // Toggle dropdown on click
@@ -219,12 +195,6 @@ export const Navbar = ({ isProfileModalOpen, setIsProfileModalOpen }: NavbarProp
             ) : (
               <>
                 <Link
-                  href="/support"
-                  className="text-gray-300 hover:text-pink-400"
-                >
-                  Support
-                </Link>
-                <Link
                   href="/register"
                   className="px-5 py-2 rounded-lg font-medium transition-all bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-lg shadow-pink-500/50"
                 >
@@ -333,13 +303,6 @@ export const Navbar = ({ isProfileModalOpen, setIsProfileModalOpen }: NavbarProp
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/support"
-                    className="block text-center px-5 py-2 text-gray-300 hover:text-pink-400"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Support
-                  </Link>
                   <Link
                     href="/register"
                     className="block text-center px-5 py-2 rounded-lg font-medium transition-all bg-gradient-to-r from-pink-500 to-purple-600 text-white hover:from-pink-600 hover:to-purple-700 shadow-lg shadow-pink-500/50"
