@@ -10,7 +10,7 @@ interface ProfileModalProps {
   onClose: () => void;
 }
 
-type ViewMode = 'main' | 'edit-name' | 'edit-email' | 'change-password' | 'set-password';
+type ViewMode = 'main' | 'edit-name' | 'change-password' | 'set-password';
 
 export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
   const { user, refreshUser } = useAuth();
@@ -22,10 +22,6 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
   // Edit name form state
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
-
-  // Edit email form state
-  const [newEmail, setNewEmail] = useState('');
-  const [emailPassword, setEmailPassword] = useState('');
 
   // Change password form state (для пользователей с паролем)
   const [currentPassword, setCurrentPassword] = useState('');
@@ -57,29 +53,6 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Failed to update profile');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUpdateEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      await api.updateEmail(newEmail, emailPassword);
-      await refreshUser();
-      setSuccess('Email updated successfully!');
-      setNewEmail('');
-      setEmailPassword('');
-      setTimeout(() => {
-        setViewMode('main');
-        setSuccess('');
-      }, 1500);
-    } catch (err: any) {
-      setError(err.message || 'Failed to update email');
     } finally {
       setIsLoading(false);
     }
@@ -161,8 +134,6 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
     setSuccess('');
     setFirstName(user?.firstName || '');
     setLastName(user?.lastName || '');
-    setNewEmail('');
-    setEmailPassword('');
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
@@ -237,29 +208,17 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                 Edit Name
               </button>
 
-              {/* Email change - только для обычных пользователей (НЕ Google) */}
-              {!isGoogleUser && (
+              {/* Password options - зависит от наличия пароля */}
+              {!hasPassword ? (
+                // Если пароля нет - предлагаем установить
                 <button
-                  onClick={() => setViewMode('edit-email')}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-pink-500/10 to-purple-600/10 border-2 border-blue-500/30 text-blue-400 rounded-lg font-medium hover:from-pink-500/20 hover:to-purple-600/20 hover:border-blue-500/50 transition-all"
+                  onClick={() => setViewMode('set-password')}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-pink-500/10 to-purple-600/10 border-2 border-green-500/30 text-green-400 rounded-lg font-medium hover:from-pink-500/20 hover:to-purple-600/20 hover:border-green-500/50 transition-all"
                 >
-                  Change Email
+                  Set Password
                 </button>
-              )}
-
-              {/* Password options */}
-              {isGoogleUser ? (
-                // Google пользователи могут только ДОБАВИТЬ пароль (если его еще нет)
-                !hasPassword && (
-                  <button
-                    onClick={() => setViewMode('set-password')}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-pink-500/10 to-purple-600/10 border-2 border-green-500/30 text-green-400 rounded-lg font-medium hover:from-pink-500/20 hover:to-purple-600/20 hover:border-green-500/50 transition-all"
-                  >
-                    Add Password
-                  </button>
-                )
               ) : (
-                // Обычные пользователи могут ИЗМЕНЯТЬ пароль
+                // Если пароль есть - можно изменить
                 <button
                   onClick={() => setViewMode('change-password')}
                   className="w-full px-6 py-3 bg-gradient-to-r from-pink-500/10 to-purple-600/10 border-2 border-purple-500/30 text-purple-400 rounded-lg font-medium hover:from-pink-500/20 hover:to-purple-600/20 hover:border-purple-500/50 transition-all"
@@ -333,85 +292,6 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                 className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-lg hover:from-pink-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-gray-950 transition-all shadow-lg shadow-pink-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Updating...' : 'Save Changes'}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Edit Email View */}
-        {viewMode === 'edit-email' && (
-          <div className="p-8">
-            <button
-              onClick={() => setViewMode('main')}
-              className="flex items-center gap-2 text-gray-400 hover:text-pink-400 transition-colors mb-6"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back
-            </button>
-
-            <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-              Change Email
-            </h2>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
-                {error}
-              </div>
-            )}
-
-            {success && (
-              <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-green-400 text-sm">
-                {success}
-              </div>
-            )}
-
-            <form onSubmit={handleUpdateEmail} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Current Email
-                </label>
-                <input
-                  type="email"
-                  value={user?.email}
-                  disabled
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-400 cursor-not-allowed"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  New Email
-                </label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Confirm with Password
-                </label>
-                <input
-                  type="password"
-                  value={emailPassword}
-                  onChange={(e) => setEmailPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-semibold rounded-lg hover:from-pink-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-gray-950 transition-all shadow-lg shadow-pink-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Updating...' : 'Update Email'}
               </button>
             </form>
           </div>
@@ -511,11 +391,11 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
             </button>
 
             <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-              Add Password
+              Set Password
             </h2>
 
             <p className="text-gray-400 text-sm mb-6">
-              Set a password to be able to login with your email and password in addition to Google login.
+              Set a password to enable login with your email and password.
             </p>
 
             {error && (
