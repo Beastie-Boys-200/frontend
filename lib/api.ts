@@ -8,6 +8,8 @@ interface AuthResponse {
     email: string;
     first_name: string;
     last_name: string;
+    has_password?: boolean;
+    auth_provider?: 'email' | 'google' | null;
   };
 }
 
@@ -132,6 +134,25 @@ class ApiService {
       body: JSON.stringify({
         old_password: oldPassword,
         new_password: newPassword,
+      }),
+    });
+  }
+
+  async setPassword(newPassword: string): Promise<{ message: string }> {
+    return this.request('/api/auth/set-password/', {
+      method: 'POST',
+      body: JSON.stringify({
+        new_password: newPassword,
+      }),
+    });
+  }
+
+  async updateEmail(newEmail: string, password: string): Promise<AuthResponse['user']> {
+    return this.request('/api/auth/update-email/', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        new_email: newEmail,
+        password: password,
       }),
     });
   }

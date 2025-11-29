@@ -9,6 +9,8 @@ interface User {
   firstName: string;
   lastName: string;
   name: string;
+  hasPassword: boolean;
+  authProvider: 'email' | 'google' | null;
 }
 
 interface AuthContextType {
@@ -31,6 +33,8 @@ function mapUser(data: AuthResponse['user']): User {
     firstName: data.first_name,
     lastName: data.last_name,
     name: `${data.first_name} ${data.last_name}`.trim(),
+    hasPassword: data.has_password ?? false,
+    authProvider: data.auth_provider ?? null,
   };
 }
 
