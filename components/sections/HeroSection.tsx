@@ -3,9 +3,11 @@
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const HeroSection = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -249,16 +251,18 @@ export const HeroSection = () => {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full px-4 sm:px-0">
               <Link
                 href="/guide"
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg shadow-pink-500/50 hover:shadow-pink-500/70 transform hover:scale-105 text-center"
+                className={`px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg shadow-pink-500/50 hover:shadow-pink-500/70 transform hover:scale-105 text-center ${isAuthenticated ? 'w-full' : ''}`}
               >
                 Chat Bot
               </Link>
-              <Link
-                href="/login"
-                className="px-6 sm:px-8 py-3 sm:py-4 border-2 border-pink-500 text-pink-500 rounded-lg font-semibold hover:bg-pink-500/10 transition-all transform hover:scale-105 text-center"
-              >
-                Sign In
-              </Link>
+              {!isAuthenticated && (
+                <Link
+                  href="/login"
+                  className="px-6 sm:px-8 py-3 sm:py-4 border-2 border-pink-500 text-pink-500 rounded-lg font-semibold hover:bg-pink-500/10 transition-all transform hover:scale-105 text-center"
+                >
+                  Sign In
+                </Link>
+              )}
             </div>
           </div>
 
