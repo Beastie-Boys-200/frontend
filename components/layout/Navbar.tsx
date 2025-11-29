@@ -38,7 +38,7 @@ export const Navbar = ({ isProfileModalOpen, setIsProfileModalOpen }: NavbarProp
     },
     {
       name: 'Chat Bot',
-      href: '/chat',
+      href: '/guide',
     },
   ];
 
