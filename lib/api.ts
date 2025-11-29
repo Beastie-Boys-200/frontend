@@ -97,6 +97,26 @@ class ApiService {
 
     return data;
   }
+
+  async updateProfile(firstName: string, lastName: string): Promise<AuthResponse['user']> {
+    return this.request('/api/auth/update-profile/', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        first_name: firstName,
+        last_name: lastName,
+      }),
+    });
+  }
+
+  async changePassword(oldPassword: string, newPassword: string): Promise<{ message: string }> {
+    return this.request('/api/auth/change-password/', {
+      method: 'POST',
+      body: JSON.stringify({
+        old_password: oldPassword,
+        new_password: newPassword,
+      }),
+    });
+  }
 }
 
 export const api = new ApiService();

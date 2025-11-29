@@ -4,11 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { ProfileModal } from '@/components/modals/ProfileModal';
 
 export const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
@@ -198,9 +200,12 @@ export const Navbar = () => {
           <div className="hidden lg:flex items-center gap-4">
             {isAuthenticated && user ? (
               <>
-                <span className="text-gray-300 font-medium">
+                <button
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="text-gray-300 font-medium hover:text-pink-400 transition-colors"
+                >
                   {user.name}
-                </span>
+                </button>
                 <button
                   onClick={handleLogout}
                   className="px-5 py-2 rounded-lg font-medium transition-all border-2 border-pink-500 text-pink-500 hover:bg-pink-500/10"
@@ -304,9 +309,15 @@ export const Navbar = () => {
             <div className="pt-4 space-y-3 border-t border-pink-500/20">
               {isAuthenticated && user ? (
                 <>
-                  <div className="text-center text-gray-300 font-medium py-2">
+                  <button
+                    onClick={() => {
+                      setIsProfileModalOpen(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="block w-full text-center text-gray-300 font-medium py-2 hover:text-pink-400 transition-colors"
+                  >
                     {user.name}
-                  </div>
+                  </button>
                   <button
                     onClick={() => {
                       handleLogout();
@@ -346,6 +357,9 @@ export const Navbar = () => {
           </div>
         </div>
       </div>
+
+      {/* Profile Modal */}
+      <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
     </nav>
   );
 };
