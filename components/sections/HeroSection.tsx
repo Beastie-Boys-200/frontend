@@ -234,7 +234,7 @@ export const HeroSection = () => {
               <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-white leading-none tracking-tight relative">
                 HACKATON
               </h1>
-              <div className="relative mt-1 md:mt-2" style={{ marginLeft: '50%' }}>
+              <div className="relative mt-1 md:mt-2" style={{ marginLeft: '65%' }}>
                 <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 bg-clip-text text-transparent animate-pulse relative">
                   2025
                 </h2>
