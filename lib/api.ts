@@ -1,4 +1,19 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Динамически определяем API URL на основе текущего домена
+const getApiUrl = (): string => {
+  // Server-side rendering - используем переменную окружения
+  if (typeof window === 'undefined') {
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  }
+
+  // Client-side - используем тот же домен что и frontend, но порт 8000
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+
+  // Формируем API URL с тем же доменом и портом 8000
+  return `${protocol}//${hostname}:8000`;
+};
+
+const API_URL = getApiUrl();
 
 interface AuthResponse {
   access: string;
@@ -31,6 +46,24 @@ class ApiService {
     return null;
   }
 
+  private getAuthToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    // Read token from localStorage instead of cookies
+    return localStorage.getItem('access_token');
+  }
+
+  private setTokens(access: string, refresh: string): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('access_token', access);
+    localStorage.setItem('refresh_token', refresh);
+  }
+
+  private clearTokens(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -39,6 +72,12 @@ class ApiService {
       'Content-Type': 'application/json',
       ...options.headers,
     };
+
+    // Add JWT token from cookie to Authorization header
+    const authToken = this.getAuthToken();
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
 
     // Add CSRF token for state-changing methods
     const csrfToken = this.getCsrfToken();
@@ -49,7 +88,7 @@ class ApiService {
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
-      credentials: 'include',  // Automatically sends httpOnly cookies
+      credentials: 'include',  // Also send cookies
     });
 
     if (!response.ok) {
@@ -69,7 +108,8 @@ class ApiService {
       body: JSON.stringify({ email, password }),
     });
 
-    // Tokens are now in httpOnly cookies - no need to store in localStorage
+    // Save tokens to localStorage
+    this.setTokens(data.access, data.refresh);
 
     return data;
   }
@@ -91,7 +131,8 @@ class ApiService {
       }),
     });
 
-    // Tokens are now in httpOnly cookies - no need to store in localStorage
+    // Save tokens to localStorage
+    this.setTokens(data.access, data.refresh);
 
     return data;
   }
@@ -100,7 +141,8 @@ class ApiService {
     await this.request('/api/auth/logout/', {
       method: 'POST',
     });
-    // Backend will clear httpOnly cookies automatically
+    // Clear tokens from localStorage
+    this.clearTokens();
   }
 
   async getUser(): Promise<AuthResponse['user']> {
@@ -113,7 +155,8 @@ class ApiService {
       body: JSON.stringify({ code }),
     });
 
-    // Tokens are now in httpOnly cookies - no need to store in localStorage
+    // Save tokens to localStorage
+    this.setTokens(data.access, data.refresh);
 
     return data;
   }
