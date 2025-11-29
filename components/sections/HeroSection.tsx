@@ -228,34 +228,34 @@ export const HeroSection = () => {
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center min-h-[80vh]">
           {/* Left Side - Main Heading and Buttons */}
-          <div className="space-y-12 flex flex-col items-center">
+          <div className="space-y-8 md:space-y-12 flex flex-col items-center">
             {/* HACKATON 2025 Block */}
             <div className="relative inline-block">
-              <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-white leading-none tracking-tight relative">
+              <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-white leading-none tracking-tight relative">
                 HACKATON
               </h1>
-              <div className="relative mt-2" style={{ marginLeft: '65%' }}>
-                <h2 className="text-5xl md:text-6xl lg:text-7xl font-black bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 bg-clip-text text-transparent animate-pulse relative">
+              <div className="relative mt-1 md:mt-2" style={{ marginLeft: '50%' }}>
+                <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 bg-clip-text text-transparent animate-pulse relative">
                   2025
                 </h2>
                 {/* Neon glow effect behind 2025 */}
-                <div className="absolute inset-0 text-5xl md:text-6xl lg:text-7xl font-black text-pink-500 blur-xl opacity-50">
+                <div className="absolute inset-0 text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black text-pink-500 blur-xl opacity-50">
                   2025
                 </div>
               </div>
             </div>
 
             {/* Buttons Block */}
-            <div className="flex flex-wrap gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full px-4 sm:px-0">
               <Link
                 href="/guide"
-                className="px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg shadow-pink-500/50 hover:shadow-pink-500/70 transform hover:scale-105"
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg shadow-pink-500/50 hover:shadow-pink-500/70 transform hover:scale-105 text-center"
               >
                 Chat Bot
               </Link>
               <Link
                 href="/login"
-                className="px-8 py-4 border-2 border-pink-500 text-pink-500 rounded-lg font-semibold hover:bg-pink-500/10 transition-all transform hover:scale-105"
+                className="px-6 sm:px-8 py-3 sm:py-4 border-2 border-pink-500 text-pink-500 rounded-lg font-semibold hover:bg-pink-500/10 transition-all transform hover:scale-105 text-center"
               >
                 Sign In
               </Link>
