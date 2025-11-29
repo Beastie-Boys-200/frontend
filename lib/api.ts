@@ -17,6 +17,18 @@ interface ApiError {
 }
 
 class ApiService {
+  private getCsrfToken(): string | null {
+    if (typeof document === 'undefined') return null;
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrftoken') {
+        return value;
+      }
+    }
+    return null;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -25,6 +37,12 @@ class ApiService {
       'Content-Type': 'application/json',
       ...options.headers,
     };
+
+    // Add CSRF token for state-changing methods
+    const csrfToken = this.getCsrfToken();
+    if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method || 'GET')) {
+      headers['X-CSRFToken'] = csrfToken;
+    }
 
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
