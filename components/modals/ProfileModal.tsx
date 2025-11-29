@@ -237,7 +237,7 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
                 Edit Name
               </button>
 
-              {/* Email change - только для обычных пользователей */}
+              {/* Email change - только для обычных пользователей (НЕ Google) */}
               {!isGoogleUser && (
                 <button
                   onClick={() => setViewMode('edit-email')}
@@ -248,14 +248,18 @@ export const ProfileModal = ({ isOpen, onClose }: ProfileModalProps) => {
               )}
 
               {/* Password options */}
-              {isGoogleUser && !hasPassword ? (
-                <button
-                  onClick={() => setViewMode('set-password')}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-pink-500/10 to-purple-600/10 border-2 border-green-500/30 text-green-400 rounded-lg font-medium hover:from-pink-500/20 hover:to-purple-600/20 hover:border-green-500/50 transition-all"
-                >
-                  Add Password
-                </button>
+              {isGoogleUser ? (
+                // Google пользователи могут только ДОБАВИТЬ пароль (если его еще нет)
+                !hasPassword && (
+                  <button
+                    onClick={() => setViewMode('set-password')}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-pink-500/10 to-purple-600/10 border-2 border-green-500/30 text-green-400 rounded-lg font-medium hover:from-pink-500/20 hover:to-purple-600/20 hover:border-green-500/50 transition-all"
+                  >
+                    Add Password
+                  </button>
+                )
               ) : (
+                // Обычные пользователи могут ИЗМЕНЯТЬ пароль
                 <button
                   onClick={() => setViewMode('change-password')}
                   className="w-full px-6 py-3 bg-gradient-to-r from-pink-500/10 to-purple-600/10 border-2 border-purple-500/30 text-purple-400 rounded-lg font-medium hover:from-pink-500/20 hover:to-purple-600/20 hover:border-purple-500/50 transition-all"
