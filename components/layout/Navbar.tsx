@@ -76,7 +76,7 @@ export const Navbar = ({ isProfileModalOpen, setIsProfileModalOpen }: NavbarProp
               </div>
             </div>
             <span className="text-xl font-bold text-white group-hover:text-pink-400 transition-colors">
-              Telecom
+              Telekom
             </span>
           </Link>
 
