@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://10.10.10.1:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function GoogleCallbackPage() {
   const router = useRouter();
@@ -48,12 +48,9 @@ export default function GoogleCallbackPage() {
           throw new Error(errorData.detail || 'Authentication failed');
         }
 
-        const data = await response.json();
+        await response.json();
 
-        if (data.access) {
-          localStorage.setItem('access_token', data.access);
-          localStorage.setItem('refresh_token', data.refresh);
-        }
+        // Tokens are now in httpOnly cookies - no need to store in localStorage
 
         await refreshUser();
         router.push('/');

@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://10.10.10.1:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface AuthResponse {
   access: string;
@@ -17,29 +17,19 @@ interface ApiError {
 }
 
 class ApiService {
-  private getToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-    }
-    return null;
-  }
-
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const token = this.getToken();
-
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     };
 
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
-      credentials: 'include',
+      credentials: 'include',  // Automatically sends httpOnly cookies
     });
 
     if (!response.ok) {
@@ -59,10 +49,7 @@ class ApiService {
       body: JSON.stringify({ email, password }),
     });
 
-    if (data.access) {
-      localStorage.setItem('access_token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
-    }
+    // Tokens are now in httpOnly cookies - no need to store in localStorage
 
     return data;
   }
@@ -84,28 +71,16 @@ class ApiService {
       }),
     });
 
-    if (data.access) {
-      localStorage.setItem('access_token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
-    }
+    // Tokens are now in httpOnly cookies - no need to store in localStorage
 
     return data;
   }
 
   async logout(): Promise<void> {
-    try {
-      const refresh = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
-
-      await this.request('/api/auth/logout/', {
-        method: 'POST',
-        body: refresh ? JSON.stringify({ refresh }) : undefined,
-      });
-    } finally {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      sessionStorage.removeItem('access_token');
-      sessionStorage.removeItem('refresh_token');
-    }
+    await this.request('/api/auth/logout/', {
+      method: 'POST',
+    });
+    // Backend will clear httpOnly cookies automatically
   }
 
   async getUser(): Promise<AuthResponse['user']> {
@@ -118,10 +93,7 @@ class ApiService {
       body: JSON.stringify({ code }),
     });
 
-    if (data.access) {
-      localStorage.setItem('access_token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
-    }
+    // Tokens are now in httpOnly cookies - no need to store in localStorage
 
     return data;
   }

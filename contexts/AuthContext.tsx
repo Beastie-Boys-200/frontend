@@ -40,19 +40,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-      if (token) {
-        try {
-          const userData = await api.getUser();
-          setUser(mapUser(userData));
-        } catch {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          sessionStorage.removeItem('access_token');
-          sessionStorage.removeItem('refresh_token');
-        }
+      try {
+        // Always try to get user - if httpOnly cookie exists, backend will return user data
+        const userData = await api.getUser();
+        setUser(mapUser(userData));
+      } catch {
+        // If 401 or error - user is not authenticated, that's OK
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initAuth();
@@ -79,10 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      sessionStorage.removeItem('access_token');
-      sessionStorage.removeItem('refresh_token');
+      // Backend clears httpOnly cookies automatically
       setUser(null);
     }
   };
@@ -93,15 +87,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = useCallback(async () => {
-    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
-    if (token) {
-      try {
-        const userData = await api.getUser();
-        setUser(mapUser(userData));
-      } catch (error) {
-        console.error('Failed to refresh user:', error);
-        throw error;
-      }
+    try {
+      // No need to check for token - httpOnly cookies are sent automatically
+      const userData = await api.getUser();
+      setUser(mapUser(userData));
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      throw error;
     }
   }, []);
 

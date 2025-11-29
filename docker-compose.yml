@@ -1,0 +1,23 @@
+services:
+  frontend:
+    build: .
+    container_name: frontend
+    command: npm run dev
+    volumes:
+      - .:/app:z
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    networks:
+      - frontend_network
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      - WATCHPACK_POLLING=true
+    stdin_open: true
+    tty: true
+
+networks:
+  frontend_network:
+    driver: bridge
