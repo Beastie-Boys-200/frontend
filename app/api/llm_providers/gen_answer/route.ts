@@ -4,8 +4,19 @@ import { NextRequest } from "next/server";
 export async function POST(req: NextRequest) {
   const answer = await req.json();
 
+  let doc = null;
+  let img = null;
+  console.log("Files", answer.files);
+    if (answer.files.length > 0) {
+        if(answer.files[0].name.slice(-3) === "pdf") {
+          doc = answer.files[0].data 
+        } else {
+          img = answer.files[0].data 
+        }
+    }
+
   //const response = await fetch('http://localhost:8002/ollama/text/answer/stream', {
-  const response = await fetch('http://localhost:8003/pipeline/main/thread/', {
+  const response = await fetch('http://localhost:8003/pipeline/main/thread', {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -16,6 +27,8 @@ export async function POST(req: NextRequest) {
         //    query: answer.query
         //}
         query: answer.query,
+        doc: doc,
+        img: img,
         conversation_id: "123123123123"
     })
   });

@@ -33,6 +33,10 @@ interface ChatInterfaceProps {
   setCurrentChat: (id: number) => void;
 }
 
+function makeId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export const ChatInterface = ( chat : ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([{
       id: '1',
@@ -40,26 +44,6 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
       sender: 'bot',
       timestamp: new Date(),
   },
-    {
-        id: '2',
-        text: 'Hello! i am plan',
-        sender: 'bot',
-        timestamp: new Date(),
-    },
-
-    {
-        id: '3',
-        text: 'Hello! i am rag message',
-        sender: 'plan',
-        timestamp: new Date(),
-    },
-    
-    {
-        id: '4',
-        text: 'Hello! i am web link',
-        sender: 'plan',
-        timestamp: new Date(),
-    }
     ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -104,27 +88,7 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
               text: 'Hello! I\'m your AI Assistant. How can I help you today?',
               sender: 'bot',
               timestamp: new Date(),
-              },
-    {
-        id: '2',
-        text: 'Hello! i am plan',
-        sender: 'plan',
-        timestamp: new Date(),
-    },
-
-    {
-        id: '3',
-        text: 'Hello! i am rag message',
-        sender: 'rag',
-        timestamp: new Date(),
-    },
-    
-    {
-        id: '4',
-        text: 'Hello! i am web link',
-        sender: 'web link',
-        timestamp: new Date(),
-    }
+              }
 
 
             ]);
@@ -189,7 +153,7 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
 
     // Add user message with files
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: makeId(),
       text: inputText,
       sender: 'user',
       timestamp: new Date(),
@@ -204,7 +168,7 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
 
 
     let botMessage: Message = {
-      id: Date.now().toString()+1,
+      id: makeId(),
       text: '',
       sender: 'bot',
       timestamp: undefined,
@@ -221,113 +185,148 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
 
     const reader = res.body!.getReader();
     const decoder = new TextDecoder();
-
-
+    
+    let buffer = "";
+    let stream_role = "";
+    
+    setMessages((prev) => [ ...prev.slice(0, -1)]);
     while (true) {
       const { value, done } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value);
-      botMessage = {...botMessage, text: botMessage.text+chunk};
-      setMessages((prev) => [ ...prev.slice(0, -1), botMessage]);
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        const chunk = JSON.parse(line); // { role, token }
+
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+
+          // если нет сообщений или роль изменилась — начинаем новое сообщение
+          if (!last || last.sender !== chunk.role) {
+            const newMsg = {
+              id: makeId(),
+              sender: chunk.role,
+              text: chunk.token,      // сразу кладём первый токен
+              timestamp: undefined,
+            };
+            return [...prev.slice(0, -1), {...prev[prev.length-1], timestamp: new Date()}, newMsg];
+          }
+
+          // та же роль — дописываем в последний message
+          const updatedLast = {
+            ...last,
+            text: last.text + chunk.token,
+          };
+
+          return [...prev.slice(0, -1), updatedLast];
+        });
+      }
     }
 
 
-    botMessage = {...botMessage, timestamp: new Date()};
-    setMessages((prev) => [ ...prev.slice(0, -1), botMessage ]);
+
+
+    //botMessage = {...botMessage, timestamp: new Date()};
+    setMessages((prev) => [ ...prev.slice(0, -1), {...prev[prev.length-1], timestamp: new Date()}]);
 
     setIsTyping(false);
 
     let conv_id = null;
-    if ( chatName == '' ) {
-        // Generate chat name
-        setChatNameCreation(true);
-        const res_gen_chat_name = await fetch("/api/llm_providers/gen_chat_name", {
-          method: "POST",
-          body: JSON.stringify({ context: [ userMessage, botMessage ] }),
-        });
-        const reader_gen_chat_name = res_gen_chat_name.body!.getReader();
-        const decoder_chat_name = new TextDecoder();
+    //if ( chatName == '' ) {
+    //    // Generate chat name
+    //    setChatNameCreation(true);
+    //    const res_gen_chat_name = await fetch("/api/llm_providers/gen_chat_name", {
+    //      method: "POST",
+    //      body: JSON.stringify({ context: [ userMessage, botMessage ] }),
+    //    });
+    //    const reader_gen_chat_name = res_gen_chat_name.body!.getReader();
+    //    const decoder_chat_name = new TextDecoder();
 
-        let chat_name_str = '';
+    //    let chat_name_str = '';
 
-        while (true) {
-          const { value, done } = await reader_gen_chat_name.read();
-          if (done) break;
+    //    while (true) {
+    //      const { value, done } = await reader_gen_chat_name.read();
+    //      if (done) break;
 
-          const chunk = decoder_chat_name.decode(value);
-          chat_name_str += chunk;
-          setChatName((prev) => prev + chunk);
-        }
+    //      const chunk = decoder_chat_name.decode(value);
+    //      chat_name_str += chunk;
+    //      setChatName((prev) => prev + chunk);
+    //    }
 
-        setChatNameCreation(false);
+    //    setChatNameCreation(false);
 
-        console.log("Messages length", messages);
+    //    console.log("Messages length", messages);
 
-        if (messages.length <= 1 ) {
+        //if (messages.length <= 1 ) {
 
-            const save = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/conversations/`, {
-              method: "POST",
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${localStorage.getItem("access_token")}`
-                },
-              body: JSON.stringify({ title: chat_name_str }),
-            });
+        //    const save = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/conversations/`, {
+        //      method: "POST",
+        //        headers: {
+        //          'Content-Type': 'application/json',
+        //          Authorization: `Bearer ${localStorage.getItem("access_token")}`
+        //        },
+        //      body: JSON.stringify({ title: chat_name_str }),
+        //    });
 
-            if (!save.ok) {
-              const errorData = await save.json().catch(() => ({}));
-              throw new Error(errorData.detail || errorData.message || "Request failed");
-            }
+        //    if (!save.ok) {
+        //      const errorData = await save.json().catch(() => ({}));
+        //      throw new Error(errorData.detail || errorData.message || "Request failed");
+        //    }
 
-            const conversation_obj = await save.json();
-            conv_id = conversation_obj.id;
-            chat.setCurrentChat(conv_id);
-            chat.setChats((prev) => [...prev, {id: conv_id, title: chat_name_str, timestamp: new Date()}]);
-
-
-            }
-        }else{
-          conv_id = chat.currentChat;
-        }
-
-        console.log("Conv id", conv_id);
+        //    const conversation_obj = await save.json();
+        //    conv_id = conversation_obj.id;
+        //    chat.setCurrentChat(conv_id);
+        //    chat.setChats((prev) => [...prev, {id: conv_id, title: chat_name_str, timestamp: new Date()}]);
 
 
-        const save_messages = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/conversations/${conv_id}/messages/`, {
-          method: "POST",
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${localStorage.getItem("access_token")}`
-            },
-          body: JSON.stringify({
-            role: 'user',
-            content: userMessage.text
-          }),
-        });
+        //    }
+        //}else{
+        //  conv_id = chat.currentChat;
+        //}
 
-        if (!save_messages.ok) {
-          const errorData = await save_messages.json().catch(() => ({}));
-          throw new Error(errorData.detail || errorData.message || "Request failed");
-        }
+        //console.log("Conv id", conv_id);
 
 
-        const save_messages_2 = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/conversations/${conv_id}/messages/`, {
-          method: "POST",
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${localStorage.getItem("access_token")}`
-            },
-          body: JSON.stringify({
-            role: 'assistant',
-            content: botMessage.text
-          }),
-        });
+        //const save_messages = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/conversations/${conv_id}/messages/`, {
+        //  method: "POST",
+        //    headers: {
+        //      'Content-Type': 'application/json',
+        //      Authorization: `Bearer ${localStorage.getItem("access_token")}`
+        //    },
+        //  body: JSON.stringify({
+        //    role: 'user',
+        //    content: userMessage.text
+        //  }),
+        //});
 
-        if (!save_messages_2.ok) {
-          const errorData = await save_messages_2.json().catch(() => ({}));
-          throw new Error(errorData.detail || errorData.message || "Request failed");
-        }
+        //if (!save_messages.ok) {
+        //  const errorData = await save_messages.json().catch(() => ({}));
+        //  throw new Error(errorData.detail || errorData.message || "Request failed");
+        //}
+
+
+        //const save_messages_2 = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/conversations/${conv_id}/messages/`, {
+        //  method: "POST",
+        //    headers: {
+        //      'Content-Type': 'application/json',
+        //      Authorization: `Bearer ${localStorage.getItem("access_token")}`
+        //    },
+        //  body: JSON.stringify({
+        //    role: 'assistant',
+        //    content: botMessage.text
+        //  }),
+        //});
+
+        //if (!save_messages_2.ok) {
+        //  const errorData = await save_messages_2.json().catch(() => ({}));
+        //  throw new Error(errorData.detail || errorData.message || "Request failed");
+        //}
 
 
     //}
@@ -380,7 +379,7 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((message) => (
           <div
-            key={message.id}
+            key={message.id+Math.random()}
             className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
