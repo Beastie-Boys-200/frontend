@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFormActivity } from '@/contexts/FormActivityContext';
 import { GoogleIcon } from '@/components/icons/OAuthIcons';
 
 export default function Login() {
   const router = useRouter();
   const { login } = useAuth();
+  const { setInputActivity } = useFormActivity();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -32,6 +34,13 @@ export default function Login() {
         [name]: '',
       }));
     }
+
+    // Notify 3D scene about input activity
+    if (name === 'email') {
+      setInputActivity('email');
+    } else if (name === 'password') {
+      setInputActivity('password');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +60,7 @@ export default function Login() {
     }
 
     setIsLoading(true);
+    setInputActivity('submit'); // Submit animation effect
 
     try {
       await login(formData.email, formData.password, formData.rememberMe);

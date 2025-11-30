@@ -1,16 +1,33 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { FormActivityProvider, useFormActivity } from '@/contexts/FormActivityContext';
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+// Dynamic import of 3D component to avoid SSR issues
+const NetworkVisualization = dynamic(
+  () => import('@/components/3d/NetworkVisualization').then(mod => mod.NetworkVisualization),
+  { ssr: false }
+);
+
+function AuthLayoutContent({ children }: { children: React.ReactNode }) {
+  const { inputActivity } = useFormActivity();
+  const [key, setKey] = useState(0);
+
+  // Re-render on resize to fix 3D canvas issues
+  useEffect(() => {
+    const handleResize = () => {
+      setKey(prev => prev + 1);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col lg:flex-row">
-      {/* Back to home button - fixed positioning to avoid overlap */}
+      {/* Back to home button */}
       <Link
         href="/"
         className="fixed top-4 left-4 z-50 flex items-center gap-2 px-3 sm:px-4 py-2 bg-gray-900/80 backdrop-blur-sm border border-pink-500/30 rounded-lg text-pink-400 hover:text-pink-300 hover:border-pink-500/50 transition-all"
@@ -33,12 +50,22 @@ export default function AuthLayout({
         </div>
       </div>
 
-      {/* Right side - black block (placeholder for 3D visualization) */}
-      <div className="hidden lg:block lg:w-1/2 relative lg:min-h-screen bg-black">
-        <div className="absolute inset-0 flex items-center justify-center text-gray-600">
-          <p className="text-xl">3D Visualization</p>
-        </div>
+      {/* Right side - 3D visualization (desktop only) */}
+      <div className="hidden lg:block lg:w-1/2 relative lg:min-h-screen">
+        <NetworkVisualization key={key} inputActivity={inputActivity} />
       </div>
     </div>
+  );
+}
+
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <FormActivityProvider>
+      <AuthLayoutContent>{children}</AuthLayoutContent>
+    </FormActivityProvider>
   );
 }
