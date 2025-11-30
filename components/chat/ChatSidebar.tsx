@@ -5,19 +5,15 @@ import Link from 'next/link';
 import { AnimatedBot } from './AnimatedBot';
 import clsx from 'clsx';
 
-interface Chat {
-  id: number;
-  title: string;
-  timestamp: Date;
-}
-
 interface ChatSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
-  chats: Chat[];
-  setChats: (chats: Chat[] | ((prev: Chat[]) => Chat[])) => void;
-  currentChat: number;
-  setCurrentChat: (id: number) => void;
+}
+
+interface Chat {
+  id: string;
+  title: string;
+  timestamp: Date;
 }
 
 export const ChatSidebar = ({ isOpen, onToggle, chats, setChats, currentChat, setCurrentChat }: ChatSidebarProps) => {
@@ -69,7 +65,7 @@ export const ChatSidebar = ({ isOpen, onToggle, chats, setChats, currentChat, se
             </div>
 
             {/* New Chat Button */}
-            <button className="w-full px-4 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-medium hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg shadow-pink-500/50 flex items-center justify-center gap-2"
+            <button className="w-full px-4 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg font-medium hover:from-pink-600 hover:to-purple-700 transition-all shadow-lg shadow-pink-500/50 flex items-center justify-center gap-2" 
                 onClick={() => setCurrentChat(0)}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,6 +90,7 @@ export const ChatSidebar = ({ isOpen, onToggle, chats, setChats, currentChat, se
                 onClick={() => setCurrentChat(chat.id)}
               >
                 <div className="flex items-center gap-2">
+                  {/*<svg className="w-4 h-4 text-gray-500 group-hover:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">*/}
                   <svg className={clsx(
                     "w-4 h-4 ",
                     currentChat == chat.id ? "text-pink-400" : "text-gray-500 group-hover:text-pink-400"
@@ -105,6 +102,32 @@ export const ChatSidebar = ({ isOpen, onToggle, chats, setChats, currentChat, se
               </button>
             ))}
           </div>
+
+          {/* Account Section */}
+          {/*<div className="p-4 border-t border-pink-500/20">
+            <Link
+              href="/login"
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-pink-500/10 transition-all group"
+            >
+              <div className="relative">
+                {/* Glow effect }
+                <div className="absolute inset-0 bg-pink-500/30 rounded-full blur-md group-hover:bg-pink-500/50 transition-all"></div>
+                <div className="relative w-10 h-10 bg-gray-800 rounded-full border-2 border-pink-500/30 group-hover:border-pink-500/60 transition-all flex items-center justify-center">
+                  <svg className="w-5 h-5 text-gray-400 group-hover:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-white group-hover:text-pink-400 transition-colors">
+                  Sign In
+                </p>
+                <p className="text-xs text-gray-400">
+                  Access your account
+                </p>
+              </div>
+            </Link>
+          </div>*/}
         </div>
       </div>
 

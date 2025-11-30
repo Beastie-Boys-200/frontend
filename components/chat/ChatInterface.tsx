@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Markdown from 'react-markdown';
+//import Answer from '@/app/api/llm_providers/defenitions';
 
 interface Message {
   id: string;
   text: string;
-  sender: 'user' | 'bot';
+  sender: 'user' | 'bot' | 'assistant';
   timestamp?: Date;
 }
 
@@ -24,7 +25,7 @@ interface ChatInterfaceProps {
   setCurrentChat: (id: number) => void;
 }
 
-export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurrentChat }: ChatInterfaceProps) => {
+export const ChatInterface = ( chat : ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([{
       id: '1',
       text: 'Hello! I\'m your AI Assistant. How can I help you today?',
@@ -36,13 +37,16 @@ export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurr
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const [ chatName, setChatName ] = useState(chat_name);
+  const [ chatName, setChatName ] = useState(chat.chat_name);
+
+
+
   const [ chatNameCreation, setChatNameCreation ] = useState(false);
 
 
   useEffect(() => {
     const getConversation = async () => {
-        const get_conv = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/conversations/${currentChat}`, {
+        const get_conv = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/conversations/${chat.currentChat}`, {
           method: "GET",
             headers: {
               'Content-Type': 'application/json',
@@ -55,14 +59,19 @@ export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurr
         }
         const conv = await get_conv.json();
 
-        const results = conv.messages.map((msg: any) => ({ id: msg.id, text: msg.content, sender: msg.role, timestamp: new Date(msg.timestamp) }));
+        const results = conv.messages.map((msg: any) => ({
+          id: msg.id,
+          text: msg.content,
+          sender: msg.role === 'assistant' ? 'bot' : msg.role, // Map 'assistant' to 'bot' for UI consistency
+          timestamp: new Date(msg.timestamp)
+        }));
         console.log("Results", results);
         setMessages(results);
         setChatName(conv.title);
     }
 
     const load = async () => {
-        if (currentChat != 0) await getConversation();
+        if (chat.currentChat != 0) await getConversation();
         else {
             setMessages([{
               id: '1',
@@ -72,11 +81,13 @@ export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurr
               }]);
             setChatName('');
         }
+        
     }
 
     load();
+    
 
-  }, [currentChat]);
+  }, [chat.currentChat]);
 
 
 
@@ -109,7 +120,7 @@ export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurr
       timestamp: undefined,
     }
     setMessages((prev) => [ ...prev, botMessage]);
-
+      
     const res = await fetch("/api/llm_providers/gen_answer", {
       method: "POST",
       body: JSON.stringify({ query: inputText }),
@@ -128,7 +139,7 @@ export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurr
       setMessages((prev) => [ ...prev.slice(0, -1), botMessage]);
     }
 
-
+    
     botMessage = {...botMessage, timestamp: new Date()};
     setMessages((prev) => [ ...prev.slice(0, -1), botMessage ]);
 
@@ -144,22 +155,26 @@ export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurr
         });
         const reader_gen_chat_name = res_gen_chat_name.body!.getReader();
         const decoder_chat_name = new TextDecoder();
-
-        let chat_name_str = '';
+    
+        let chat_name = '';
 
         while (true) {
           const { value, done } = await reader_gen_chat_name.read();
           if (done) break;
 
           const chunk = decoder_chat_name.decode(value);
-          chat_name_str += chunk;
+          chat_name += chunk;
           setChatName((prev) => prev + chunk);
         }
 
+        //const new_chat_id = Date.now().toString()+3;
         setChatNameCreation(false);
 
-        console.log("Messages length", messages);
 
+        //chat.setCurrentChat(new_chat_id);
+
+        console.log("Messages length", messages);
+        
         if (messages.length <= 1 ) {
 
             const save = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/conversations/`, {
@@ -168,22 +183,23 @@ export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurr
                   'Content-Type': 'application/json',
                   Authorization: `Bearer ${localStorage.getItem("access_token")}`
                 },
-              body: JSON.stringify({ title: chat_name_str }),
+              body: JSON.stringify({ title: chat_name }),
             });
 
             if (!save.ok) {
               const errorData = await save.json().catch(() => ({}));
               throw new Error(errorData.detail || errorData.message || "Request failed");
             }
-
+        
             const conversation_obj = await save.json();
             conv_id = conversation_obj.id;
-            setCurrentChat(conv_id);
-            setChats((prev) => [...prev, {id: conv_id, title: chat_name_str, timestamp: new Date()}]);
+            chat.setCurrentChat(conv_id);
+            chat.setChats((prev) => [...prev, {id: conv_id, title: chat_name, timestamp: new Date()}]);
+            
 
             }
         }else{
-          conv_id = currentChat;
+          conv_id = chat.currentChat;
         }
 
         console.log("Conv id", conv_id);
@@ -223,6 +239,9 @@ export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurr
           const errorData = await save_messages_2.json().catch(() => ({}));
           throw new Error(errorData.detail || errorData.message || "Request failed");
         }
+        
+        
+    //}
 
   };
 
@@ -251,13 +270,13 @@ export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurr
             ) : (
                 <>
                     <h1 className="text-xl font-bold text-white">
-                        { chatName ? chatName : 'Start new chat' }
+                        { chatName ? chatName : 'Start new chat' } 
                     </h1>
                     { chatName ? (<></>) : (
                         <p className="text-sm text-gray-400">
                           Your intelligent chatbot companion
                         </p>
-                    )}
+                    )} 
                 </>
             )}
           </div>
@@ -282,7 +301,7 @@ export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurr
                   : 'bg-gray-800 text-gray-100 border border-pink-500/20'
               }`}
             >
-                { message.text.length != 0 ? <div className="text-sm leading-relaxed whitespace-pre-wrap"><Markdown>{message.text}</Markdown></div> : null}
+                { message.text.length != '' ? <div className="text-sm leading-relaxed whitespace-pre-wrap"><Markdown>{message.text}</Markdown></div> : null}
               <div
                 className={`text-xs mt-2 ${
                   message.sender === 'user' ? 'text-pink-100' : 'text-gray-500'
@@ -299,6 +318,19 @@ export const ChatInterface = ({ chat_name, chats, setChats, currentChat, setCurr
             </div>
           </div>
         ))}
+
+        {/* Typing Indicator */}
+        {/*isTyping && (
+          <div className="flex justify-start">
+            <div className="bg-gray-800 border border-pink-500/20 rounded-2xl px-4 py-3">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+            </div>
+          </div>
+        )*/}
 
             <div ref={messagesEndRef} />
       </div>

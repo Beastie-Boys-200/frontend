@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 export async function POST(req: NextRequest) {
   const { prompt } = await req.json();
 
-  const response = await fetch(`${process.env.LLM_API_URL}/ollama/text/answer/stream?query=${prompt}`, {
+  const response = await fetch(`http://localhost:8002/ollama/text/answer/stream?query=${prompt}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -35,3 +35,4 @@ export async function POST(req: NextRequest) {
     }
   });
 }
+

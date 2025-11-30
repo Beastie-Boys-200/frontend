@@ -39,6 +39,23 @@ export default function GuidePage() {
 
       const getChats = async () => {
         try {
+          // Get user info first to filter by user
+          const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/user/`, {
+            method: "GET",
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+          });
+
+          if (!userResponse.ok) {
+            console.error("Failed to get user info");
+            return;
+          }
+
+          const userData = await userResponse.json();
+          const userId = userData.id;
+
           const get_chats = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/conversations/`, {
             method: "GET",
             headers: {
@@ -53,7 +70,9 @@ export default function GuidePage() {
           }
 
           const chats_data = await get_chats.json();
-          const results = chats_data.map((chat: any) => ({
+          // Filter chats by current user
+          const userChats = chats_data.filter((chat: any) => chat.user === userId);
+          const results = userChats.map((chat: any) => ({
             id: chat.id,
             title: chat.title,
             timestamp: new Date(chat.created_at)
@@ -166,7 +185,13 @@ export default function GuidePage() {
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
-        <ChatInterface chat_name={''} chats={chats} setChats={setChats} currentChat={currentChat} setCurrentChat={setCurrentChat}/>
+        <ChatInterface
+          chat_name={''}
+          chats={chats}
+          setChats={setChats}
+          currentChat={currentChat}
+          setCurrentChat={setCurrentChat}
+        />
       </div>
     </div>
   );

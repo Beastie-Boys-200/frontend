@@ -3,15 +3,16 @@ import { NextRequest } from "next/server";
 export async function POST(req: NextRequest) {
   const answer = await req.json();
 
-  answer.context = answer.context.map( (message: any) => message.text )
+  answer.context = answer.context.map( (message) => message.text )
 
   console.log(answer)
 
 
-  const response = await fetch(`${process.env.LLM_API_URL}/ollama/text/raganswer/stream`, {
+  const response = await fetch(`http://localhost:8002/ollama/text/raganswer/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      //Authorization: `Bearer ${process.env.LLM_KEY}`
     },
     body: JSON.stringify({
         query: {
@@ -46,3 +47,4 @@ export async function POST(req: NextRequest) {
     }
   });
 }
+
