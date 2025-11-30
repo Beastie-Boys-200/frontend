@@ -3,11 +3,19 @@
 import { useState, useRef, useEffect } from 'react';
 import Markdown from 'react-markdown';
 
+interface FileAttachment {
+  name: string;
+  type: string;
+  size: number;
+  data: string; // base64
+}
+
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'bot' | 'assistant';
   timestamp?: Date;
+  files?: FileAttachment[];
 }
 
 interface Chat {
@@ -134,12 +142,13 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
       }))
     );
 
-    // Add user message
+    // Add user message with files
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputText,
       sender: 'user',
       timestamp: new Date(),
+      files: filesData.length > 0 ? filesData : undefined,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -336,7 +345,55 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
                   : 'bg-gray-800 text-gray-100 border border-pink-500/20'
               }`}
             >
-                { message.text.length != 0 ? <div className="text-sm leading-relaxed whitespace-pre-wrap"><Markdown>{message.text}</Markdown></div> : null}
+              {/* File attachments - shown first */}
+              {message.files && message.files.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {message.files.map((file, fileIndex) => (
+                    <div
+                      key={fileIndex}
+                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
+                        message.sender === 'user'
+                          ? 'bg-white/20 backdrop-blur-sm'
+                          : 'bg-gray-700/50'
+                      }`}
+                    >
+                      {/* File preview/icon */}
+                      {file.type.startsWith('image/') ? (
+                        <img
+                          src={file.data}
+                          alt={file.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      ) : (
+                        <div className={message.sender === 'user' ? 'text-white' : 'text-pink-400'}>
+                          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 18h12a2 2 0 002-2V8a2 2 0 00-2-2h-4L8 2H4a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+
+                      {/* File info */}
+                      <div className="flex flex-col">
+                        <span className={`text-xs truncate max-w-[120px] ${
+                          message.sender === 'user' ? 'text-white' : 'text-gray-300'
+                        }`}>
+                          {file.name}
+                        </span>
+                        <span className={`text-xs ${
+                          message.sender === 'user' ? 'text-white/70' : 'text-gray-500'
+                        }`}>
+                          {(file.size / 1024).toFixed(1)} KB
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Message text */}
+              { message.text.length != 0 ? <div className="text-sm leading-relaxed whitespace-pre-wrap"><Markdown>{message.text}</Markdown></div> : null}
+
+              {/* Timestamp */}
               <div
                 className={`text-xs mt-2 ${
                   message.sender === 'user' ? 'text-pink-100' : 'text-gray-500'
