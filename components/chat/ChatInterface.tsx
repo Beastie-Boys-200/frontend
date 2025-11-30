@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Markdown from 'react-markdown';
-//import Answer from '@/app/api/llm_providers/defenitions';
 
 interface Message {
   id: string;
@@ -36,8 +35,10 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [ chatName, setChatName ] = useState(chat.chat_name);
+  const [ uploadedFiles, setUploadedFiles ] = useState<File[]>([]);
 
 
 
@@ -59,12 +60,7 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
         }
         const conv = await get_conv.json();
 
-        const results = conv.messages.map((msg: any) => ({
-          id: msg.id,
-          text: msg.content,
-          sender: msg.role === 'assistant' ? 'bot' : msg.role, // Map 'assistant' to 'bot' for UI consistency
-          timestamp: new Date(msg.timestamp)
-        }));
+        const results = conv.messages.map((msg: any) => ({ id: msg.id, text: msg.content, sender: msg.role, timestamp: new Date(msg.timestamp) }));
         console.log("Results", results);
         setMessages(results);
         setChatName(conv.title);
@@ -81,11 +77,11 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
               }]);
             setChatName('');
         }
-        
+
     }
 
     load();
-    
+
 
   }, [chat.currentChat]);
 
@@ -95,9 +91,48 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Handle file selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+
+    // Filter only PDF and images
+    const validFiles = files.filter(file => {
+      const isPDF = file.type === 'application/pdf';
+      const isImage = file.type.startsWith('image/');
+      return isPDF || isImage;
+    });
+
+    setUploadedFiles(prev => [...prev, ...validFiles]);
+  };
+
+  // Remove file from upload list
+  const removeFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
 
   const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() && uploadedFiles.length === 0) return;
+
+    // Convert files to base64
+    const filesData = await Promise.all(
+      uploadedFiles.map(async (file) => ({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        data: await fileToBase64(file)
+      }))
+    );
 
     // Add user message
     const userMessage: Message = {
@@ -109,6 +144,7 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
 
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
+    setUploadedFiles([]); // Clear uploaded files
     setIsTyping(true);
     scrollToBottom();
 
@@ -120,10 +156,13 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
       timestamp: undefined,
     }
     setMessages((prev) => [ ...prev, botMessage]);
-      
+
     const res = await fetch("/api/llm_providers/gen_answer", {
       method: "POST",
-      body: JSON.stringify({ query: inputText }),
+      body: JSON.stringify({
+        query: inputText,
+        files: filesData  // Send files data
+      }),
     });
 
     const reader = res.body!.getReader();
@@ -139,7 +178,7 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
       setMessages((prev) => [ ...prev.slice(0, -1), botMessage]);
     }
 
-    
+
     botMessage = {...botMessage, timestamp: new Date()};
     setMessages((prev) => [ ...prev.slice(0, -1), botMessage ]);
 
@@ -155,26 +194,22 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
         });
         const reader_gen_chat_name = res_gen_chat_name.body!.getReader();
         const decoder_chat_name = new TextDecoder();
-    
-        let chat_name = '';
+
+        let chat_name_str = '';
 
         while (true) {
           const { value, done } = await reader_gen_chat_name.read();
           if (done) break;
 
           const chunk = decoder_chat_name.decode(value);
-          chat_name += chunk;
+          chat_name_str += chunk;
           setChatName((prev) => prev + chunk);
         }
 
-        //const new_chat_id = Date.now().toString()+3;
         setChatNameCreation(false);
 
-
-        //chat.setCurrentChat(new_chat_id);
-
         console.log("Messages length", messages);
-        
+
         if (messages.length <= 1 ) {
 
             const save = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/chat/conversations/`, {
@@ -183,20 +218,19 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
                   'Content-Type': 'application/json',
                   Authorization: `Bearer ${localStorage.getItem("access_token")}`
                 },
-              body: JSON.stringify({ title: chat_name }),
+              body: JSON.stringify({ title: chat_name_str }),
             });
 
             if (!save.ok) {
               const errorData = await save.json().catch(() => ({}));
               throw new Error(errorData.detail || errorData.message || "Request failed");
             }
-        
+
             const conversation_obj = await save.json();
-            console.log("Conversation", conversation_obj);
             conv_id = conversation_obj.id;
             chat.setCurrentChat(conv_id);
-            chat.setChats((prev) => [...prev, {id: conv_id, title: chat_name, timestamp: new Date()}]);
-            
+            chat.setChats((prev) => [...prev, {id: conv_id, title: chat_name_str, timestamp: new Date()}]);
+
 
             }
         }else{
@@ -240,8 +274,8 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
           const errorData = await save_messages_2.json().catch(() => ({}));
           throw new Error(errorData.detail || errorData.message || "Request failed");
         }
-        
-        
+
+
     //}
 
   };
@@ -271,13 +305,13 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
             ) : (
                 <>
                     <h1 className="text-xl font-bold text-white">
-                        { chatName ? chatName : 'Start new chat' } 
+                        { chatName ? chatName : 'Start new chat' }
                     </h1>
                     { chatName ? (<></>) : (
                         <p className="text-sm text-gray-400">
                           Your intelligent chatbot companion
                         </p>
-                    )} 
+                    )}
                 </>
             )}
           </div>
@@ -302,7 +336,7 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
                   : 'bg-gray-800 text-gray-100 border border-pink-500/20'
               }`}
             >
-                { message.text.length != '' ? <div className="text-sm leading-relaxed whitespace-pre-wrap"><Markdown>{message.text}</Markdown></div> : null}
+                { message.text.length != 0 ? <div className="text-sm leading-relaxed whitespace-pre-wrap"><Markdown>{message.text}</Markdown></div> : null}
               <div
                 className={`text-xs mt-2 ${
                   message.sender === 'user' ? 'text-pink-100' : 'text-gray-500'
@@ -320,27 +354,78 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
           </div>
         ))}
 
-        {/* Typing Indicator */}
-        {/*isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-gray-800 border border-pink-500/20 rounded-2xl px-4 py-3">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-              </div>
-            </div>
-          </div>
-        )*/}
-
             <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
       <div className="p-6 border-t border-pink-500/20 bg-gray-900/50 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto">
+          {/* Uploaded Files Preview */}
+          {uploadedFiles.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {uploadedFiles.map((file, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-2 bg-gray-800 border border-pink-500/20 rounded-lg px-3 py-2 text-sm"
+                >
+                  {/* File icon */}
+                  <div className="text-pink-400">
+                    {file.type === 'application/pdf' ? (
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 18h12a2 2 0 002-2V8a2 2 0 00-2-2h-4L8 2H4a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+
+                  {/* File name */}
+                  <span className="text-gray-300 truncate max-w-[150px]">{file.name}</span>
+
+                  {/* File size */}
+                  <span className="text-gray-500 text-xs">
+                    ({(file.size / 1024).toFixed(1)} KB)
+                  </span>
+
+                  {/* Remove button */}
+                  <button
+                    onClick={() => removeFile(index)}
+                    className="text-gray-400 hover:text-pink-400 transition-colors ml-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Input Box */}
           <div className="relative flex items-stretch gap-2">
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf,image/*"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            {/* Paperclip button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-shrink-0 h-[52px] px-3 bg-gray-800 border border-pink-500/20 rounded-xl text-pink-400 hover:bg-pink-500/10 hover:border-pink-500/40 transition-all flex items-center justify-center"
+              title="Attach PDF or Image"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+            </button>
+
             <textarea
               ref={inputRef}
               value={inputText}
@@ -353,7 +438,7 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
             />
             <button
               onClick={handleSendMessage}
-              disabled={isTyping || !inputText.trim()}
+              disabled={isTyping || (!inputText.trim() && uploadedFiles.length === 0)}
               className="flex-shrink-0 h-[52px] px-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-pink-500/50 flex items-center justify-center"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -364,7 +449,7 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
 
           {/* Footer Info */}
           <p className="text-xs text-gray-500 text-center mt-3">
-            Press Enter to send, Shift + Enter for new line
+            Press Enter to send, Shift + Enter for new line • Attach PDF or images
           </p>
         </div>
       </div>
