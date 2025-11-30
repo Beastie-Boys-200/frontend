@@ -192,6 +192,7 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
             }
         
             const conversation_obj = await save.json();
+            console.log("Conversation", conversation_obj);
             conv_id = conversation_obj.id;
             chat.setCurrentChat(conv_id);
             chat.setChats((prev) => [...prev, {id: conv_id, title: chat_name, timestamp: new Date()}]);

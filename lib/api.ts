@@ -42,6 +42,7 @@ class ApiService {
 
   private setTokens(access: string, refresh: string): void {
     if (typeof window === 'undefined') return;
+    console.log(access, refresh);
     localStorage.setItem('access_token', access);
     localStorage.setItem('refresh_token', refresh);
   }
