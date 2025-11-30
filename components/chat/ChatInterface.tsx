@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Markdown from 'react-markdown';
+import clsx from 'clsx';
 
 interface Message {
   id: string;
   text: string;
-  sender: 'user' | 'bot' | 'assistant';
+  sender: 'user' | 'bot' | 'assistant' | 'plan' | 'rag' | 'web link';
   timestamp?: Date;
 }
 
@@ -30,7 +31,28 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
       text: 'Hello! I\'m your AI Assistant. How can I help you today?',
       sender: 'bot',
       timestamp: new Date(),
-  }]);
+  },
+    {
+        id: '2',
+        text: 'Hello! i am plan',
+        sender: 'bot',
+        timestamp: new Date(),
+    },
+
+    {
+        id: '3',
+        text: 'Hello! i am rag message',
+        sender: 'plan',
+        timestamp: new Date(),
+    },
+    
+    {
+        id: '4',
+        text: 'Hello! i am web link',
+        sender: 'plan',
+        timestamp: new Date(),
+    }
+    ]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -74,7 +96,30 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
               text: 'Hello! I\'m your AI Assistant. How can I help you today?',
               sender: 'bot',
               timestamp: new Date(),
-              }]);
+              },
+    {
+        id: '2',
+        text: 'Hello! i am plan',
+        sender: 'plan',
+        timestamp: new Date(),
+    },
+
+    {
+        id: '3',
+        text: 'Hello! i am rag message',
+        sender: 'rag',
+        timestamp: new Date(),
+    },
+    
+    {
+        id: '4',
+        text: 'Hello! i am web link',
+        sender: 'web link',
+        timestamp: new Date(),
+    }
+
+
+            ]);
             setChatName('');
         }
 
@@ -330,11 +375,13 @@ export const ChatInterface = ( chat : ChatInterfaceProps) => {
             className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                message.sender === 'user'
-                  ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
-                  : 'bg-gray-800 text-gray-100 border border-pink-500/20'
-              }`}
+              className={clsx('max-w-[70%] rounded-2xl px-4 py-3',
+                message.sender === 'user' ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white' : '',
+                message.sender === 'bot' ? 'bg-gray-800 text-gray-100 border border-pink-500/20' : '',
+                message.sender === 'plan' ? 'bg-green-900 text-gray-100 border border-pink-500/20' : '',
+                message.sender === 'web link' ? 'bg-teal-900 text-gray-100 border border-pink-500/20' : '',
+                message.sender === 'rag' ? 'bg-cyan-900 text-gray-100 border border-pink-500/20' : '',
+              )}
             >
                 { message.text.length != 0 ? <div className="text-sm leading-relaxed whitespace-pre-wrap"><Markdown>{message.text}</Markdown></div> : null}
               <div
