@@ -28,13 +28,8 @@ export const Navbar = ({ isProfileModalOpen, setIsProfileModalOpen }: NavbarProp
 
   const navItems = [
     {
-      name: 'Information',
-      href: '#',
-      dropdown: [
-        { name: 'About Us', href: '/about' },
-        { name: 'How It Works', href: '/how-it-works' },
-        { name: 'Features', href: '/features' },
-      ],
+      name: 'About Us',
+      href: '/about',
     },
     {
       name: 'Chat Bot',
